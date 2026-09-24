@@ -482,15 +482,13 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
     S.roofs.forEach((r,idx)=>{
       const t=TYPE[r.type]||TYPES[0]; r.type=t.id;
       const dem=rate(r.type,"dem"), prev=rate(r.type,"prev");
-      const custom=!SURFACES.includes(+r.surf);
       const d=document.createElement("div"); d.className="roof"+(r.asb?" asb":""); d.dataset.id=r.id;
       d.innerHTML=`
         <div class="roof-h"><input class="tname" data-k="name" value="${esc(r.name)}" aria-label="Nom de la toiture"><span class="price" data-k="price"></span></div>
         <div class="step"><div class="lab">Toiture</div><div class="chips" data-k="fam"></div></div>
         <div class="roof-grid">
-          <div class="f c6"><label>Matériau</label><div class="in">${sel(TYPES.filter(x=>x.fam===t.fam).map(x=>[x.id,x.short]),r.type,'data-k="type"')}</div></div>
-          <div class="f ${custom?"c3":"c6"}"><label>Surface</label><div class="in">${sel(SURFACES.map(v=>[v,nf(v)+" m²"]).concat([["autre","Autre surface…"]]),custom?"autre":r.surf,'data-k="surfSel"')}</div></div>
-          ${custom?`<div class="f c3"><label>Surface exacte</label><div class="in"><input data-k="surf" type="number" min="0" step="10" inputmode="numeric" value="${r.surf}"><span class="u">m²</span></div></div>`:""}
+          <div class="f c8"><label>Matériau</label><div class="in">${sel(TYPES.filter(x=>x.fam===t.fam).map(x=>[x.id,x.short]),r.type,'data-k="type"')}</div></div>
+          <div class="f c4"><label>Surface</label><div class="in"><input data-k="surf" type="number" min="0" step="1" inputmode="numeric" value="${r.surf}"><span class="u">m²</span></div></div>
         </div>
         ${t.fam==="pentu"?'<div class="step"><div class="lab">Pente</div><div class="chips" data-k="pente"></div></div>':""}
         <div class="step"><div class="lab">Prestations</div><div class="chips" data-k="presta"></div></div>
@@ -511,7 +509,6 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
       q("name").oninput=e=>{ r.name=e.target.value; save(); update(); };
       chipGroup(q("fam"),[["plat","Toit plat"],["pentu","Toit pentu"]],t.fam,f=>{ if(f!==t.fam){ r.type=TYPES.find(x=>x.fam===f).id; if(f==="plat") r.pente="p1"; save(); renderAll(); } });
       q("type").onchange=e=>set("type",e.target.value,true);
-      q("surfSel").onchange=e=>{ r.surfFromMap=false; if(e.target.value==="autre"){ r.surf=Math.max(1,+r.surf+1); save(); renderAll(); const i=document.querySelector(`.roof[data-id="${r.id}"] [data-k="surf"]`); if(i){ i.focus(); i.select(); } } else set("surf",num(e.target.value),true); };
       const si=q("surf"); if(si) si.oninput=e=>{ r.surfFromMap=false; set("surf",num(e.target.value),false); };
       const pe=q("pente"); if(pe) chipGroup(pe,PENTES,r.pente,k=>set("pente",k,true));
       /* prestations en boutons bascule */
