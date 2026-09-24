@@ -232,10 +232,6 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
         <div class="big-l" id="r-label">Prix du devis HT</div>
         <div class="big" id="r-total">–</div>
         <div class="was" id="r-was"></div>
-        <div class="target">
-          <div class="f"><label for="t-prix">Prix visé pour le devis (HT)</label><div class="in"><input id="t-prix" type="number" min="0" step="10" inputmode="decimal" placeholder="ex. 12 000"><span class="u">€</span></div></div>
-          <div id="t-out" style="font-size:14px;margin-top:8px"></div>
-        </div>
         <hr class="sep">
         <div class="lab">Détail, avant remise</div>
         <table class="lines" id="r-lines"></table>
@@ -551,18 +547,6 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
     $("sb-s").innerHTML=rm>0?`Remise <b>${fr(Math.round(rm*1000)/10)} %</b><br>soit <b>${eur(D)}</b>`:"Sans remise";
     $("g-ro").innerHTML=`Remise maximale autorisée : <b>${fr(P.remiseMax)} %</b>`;
 
-    const T=num($("t-prix").value), tout=$("t-out");
-    if(o.devis) tout.innerHTML=T>0?'<div class="alert red">Prix visé indisponible : une ligne est sur devis.</div>':"";
-    else if(T>0&&A>0){
-      const need=(1-T/A)*100;
-      if(need<=0) tout.innerHTML=`Votre prix visé est <b>au-dessus du prix BPU</b> (${eur(A)}) : aucune remise nécessaire.`;
-      else{
-        const over=need>rMax;
-        tout.innerHTML=`Remise nécessaire : <b>${need.toLocaleString("fr-FR",{maximumFractionDigits:1})} %</b>, soit ${eur(A-T)} de moins que le prix BPU.`+
-          (over?`<div class="alert red">Au-delà de la remise maximale autorisée (${fr(rMax)} %) : validation Grands Comptes nécessaire.</div>`:` <div><button class="btn" type="button" id="applyT" style="margin-top:8px">Appliquer cette remise</button></div>`);
-        const b=$("applyT"); if(b) b.onclick=()=>{ S.remise=Math.round(need*10)/10; save(); renderOffer(); update(); };
-      }
-    } else if(!o.devis) tout.innerHTML="";
 
     const rows=o.lines.filter(l=>l.v>0||l.devis).map(l=>`<tr><td>${esc(l.l)} <span class="m">· ${esc(l.s)}</span><br><span class="m">${l.sub}</span></td><td>${l.devis?(l.v>0?eur(l.v)+" + ":"")+"sur devis":eur(l.v)}</td></tr>`).join("");
     $("r-lines").innerHTML=rows+(rows?`<tr class="t"><td>Total avant remise</td><td>${o.devis?eur(A)+" + sur devis":eur(A)}</td></tr>`:`<tr><td class="m">Rien à chiffrer pour l'instant.</td><td></td></tr>`);
@@ -580,7 +564,6 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
 
   $("g-client").value=S.client;
   $("g-client").addEventListener("input",e=>{ S.client=e.target.value; save(); update(); });
-  $("t-prix").addEventListener("input",update);
   $("addRoof").onclick=()=>{ const last=S.roofs[S.roofs.length-1]; const nr=newRoof(S.roofs.length+1,last?siteOf(last):"Site 1"); if(last){ nr.type=last.type; nr.pente=last.pente; } S.roofs.push(nr); save(); renderAll(); const els=document.querySelectorAll(".roof"); const e=els[els.length-1]; if(e&&e.scrollIntoView) e.scrollIntoView({behavior:"smooth",block:"center"}); };
   let armed=false;
   $("reset").onclick=()=>{ const b=$("reset");
