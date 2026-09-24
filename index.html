@@ -135,11 +135,34 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
 .roof .roof-grid{margin-top:12px}
 .chip small{font-weight:500;opacity:.75;margin-left:4px}
 .chip:disabled{opacity:.45;cursor:not-allowed}
-@media (min-width:641px){.site{grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}}
+@media (min-width:641px){.site{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}}
 .site-info{grid-column:1 / -1;font-size:13px}
 .site-info .m{color:var(--muted)}
 .site-info .alert{margin-top:6px}
 .alert.info{background:var(--soft);color:var(--muted)}
+.ro-val{font:600 16px "Barlow",Arial,sans-serif;padding:9px 0;min-height:42px}
+@media (min-width:641px){.site{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.zone-note{grid-column:1 / -1;font-size:13px;color:var(--muted);background:var(--soft);border-radius:8px;padding:8px 10px}
+[hidden]{display:none!important}
+.add-roof{width:100%;min-height:48px;font-size:15px;margin:2px 0 14px}
+#map{height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-top:10px;background:var(--soft)}
+.maptools{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.roofchip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+.map-msg{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
+.map-msg.red{color:var(--red);font-weight:600}
+.drawbar{display:flex;gap:8px;margin-top:8px}
+.addr{grid-column:span 2;position:relative}
+@media (max-width:640px){.addr{grid-column:auto}}
+.ac{position:absolute;left:0;right:0;top:100%;z-index:1000;background:var(--card);border:1.5px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);margin-top:4px;overflow:hidden}
+.ac-item{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--ink);font:500 15px "Barlow",Arial,sans-serif;padding:10px 12px;cursor:pointer}
+.ac-item:hover,.ac-item.on{background:var(--soft)}
+.leaflet-tooltip.roof-tip{background:rgba(31,42,48,.85);color:#fff;border:0;font:600 12px "Barlow",Arial,sans-serif;box-shadow:none}
+.leaflet-tooltip.roof-tip:before{display:none}
+#map.leaflet-container,#map .leaflet-interactive{cursor:default}
+#map.leaflet-container.leaflet-dragging{cursor:grabbing}
+#map.draw-mode.leaflet-container,#map.draw-mode .leaflet-interactive{cursor:default}
+#map path.leaflet-interactive{cursor:pointer}
+.drawbar{flex-wrap:wrap}
 </style>
 <!-- PARAMÈTRES OFFICIELS : bloc modifié par l'export « Paramètres Grands Comptes ». Ne pas renommer l'id. -->
 <script type="application/json" id="bpu-params">
@@ -170,6 +193,8 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
   }
 }
 </script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
 <body>
 <div class="stickybar" id="sbar" role="region" aria-label="Prix en cours">
@@ -192,25 +217,36 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
         <h2>Offre</h2>
         <div class="fields">
           <div class="f"><label for="g-client">Client</label><div class="in"><input id="g-client" type="text" placeholder="Nom du client"></div></div>
+          <div class="f addr"><label for="g-site">Adresse du site</label><div class="in"><input id="g-site" type="text" autocomplete="off" placeholder="Tapez l'adresse, puis choisissez"></div><div class="ac" id="ac" hidden></div></div>
           <div class="f"><label for="g-remise">Remise accordée au client</label><div class="in" id="g-remise-box"></div></div>
           <div class="f"><label for="g-passages">Contrat d'entretien</label><div class="in" id="g-passages-box"></div></div>
         </div>
         <div class="ro" id="g-ro"></div>
       </section>
 
-      <section>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px;gap:10px;flex-wrap:wrap">
-          <h2 style="margin:0">Toitures</h2>
-          <button class="btn main" id="addRoof" type="button">Ajouter une toiture</button>
-        </div>
-        <div id="roofs"></div>
+      <section class="panel" id="mapPanel">
+        <h2>Repérer les toitures</h2>
+        <p class="hint">Cliquez sur un bâtiment de la vue aérienne : sa toiture est ajoutée au devis avec sa surface. Si le bâtiment n'est pas reconnu, ou pour une partie de toit seulement, dessinez le contour.</p>
+        <div class="maptools"><div class="chips" id="mapRoofs"></div><div class="chips" id="mapMode"></div></div>
+        <div id="map"></div>
+        <div class="drawbar" id="drawBar" hidden><button class="btn main" type="button" id="drawDone">✔ Terminer le contour</button><button class="btn" type="button" id="drawUndo">↶ Retirer le dernier point</button><button class="btn ghost" type="button" id="drawCancel">Annuler</button></div>
+        <div class="map-msg" id="mapMsg"></div>
       </section>
 
       <section class="panel">
-        <h2>Déplacements et nacelle, par site</h2>
-        <p class="hint">Le contrat d'entretien inclut le déplacement. Pour le démoussage, le traitement préventif et le nettoyage des évacuations, le BPU ajoute un forfait déplacement par jour d'intervention.</p>
+        <h2>Déplacements et nacelle</h2>
+        <p class="hint">Un déplacement est compté pour chaque jour d'intervention saisi sur les toitures. Le contrat d'entretien inclut le déplacement de son premier jour.</p>
         <div id="sites"></div>
       </section>
+
+      <section>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Toitures</h2>
+        </div>
+        <div id="roofs"></div>
+        <button class="btn main add-roof" id="addRoof" type="button">+ Ajouter une toiture</button>
+      </section>
+
 
       <section class="panel" id="gcPanel">
         <div class="gcbar">
@@ -291,7 +327,9 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
   const eur = (v,d=0) => isFinite(v)?v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d})+" €":"–";
   const fr = v => String(v).replace(".",",");
   const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
-  const siteOf = r => (r.site||"").trim() || "Site 1";
+  const SITE="Site 1";                       /* un devis = un seul site */
+  const siteOf = () => SITE;
+  if(S.sites&&!S.sites[SITE]){ const first=S.roofs[0]&&S.roofs[0].site; S.sites={[SITE]:Object.assign({zone:"hors100",depl:null,nac:0},(first&&S.sites[first])||Object.values(S.sites)[0]||{})}; }
 
   /* ---------- contrat d'entretien (prix agence) ---------- */
   function ceAgence(fam, s){
@@ -389,13 +427,12 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
         return a+first+(mult(r)-1)*Math.max(0,d(r)-1);
       },0);
       const inclus=Math.max(0,daysAll-billed);          /* déplacements couverts par le contrat d'entretien */
-      const deplDays=cfg.depl==null?daysAll:+cfg.depl;   /* la case affiche les jours de déplacement, comme la nacelle */
+      const deplDays=daysAll;                             /* un déplacement par jour d'intervention, obligatoire */
       const nDepl=Math.max(0,deplDays-inclus);            /* déplacements réellement facturés */
       const nNac=cfg.nac==="auto"?daysAll:Math.max(0,+cfg.nac||0);
       const warn=[];
-      if(cfg.depl!=null&&deplDays!==daysAll) warn.push(`${fr(daysAll)} jour${daysAll>1?"s":""} d'intervention mais ${fr(deplDays)} jour${deplDays>1?"s":""} de déplacement choisi${deplDays>1?"s":""}. Vérifiez.`);
-      if(cfg.nac!=="auto"&&nNac>0&&nNac!==daysAll) warn.push(`Nacelle sur ${fr(nNac)} jour${nNac>1?"s":""} pour ${fr(daysAll)} jour${daysAll>1?"s":""} d'intervention. Vérifiez.`);
-      if(act.filter(r=>d(r)>0).length>1&&(cfg.depl==null||cfg.nac==="auto")) warn.push(`Jours additionnés sur ${act.length} toitures. Si certaines sont traitées le même jour, choisissez le nombre exact.`);
+      if(cfg.nac!=="auto"&&nNac>daysAll) warn.push(`Nacelle sur ${fr(nNac)} jour${nNac>1?"s":""} pour seulement ${fr(daysAll)} jour${daysAll>1?"s":""} d'intervention. Vérifiez.`);
+      if(act.filter(r=>d(r)>0).length>1) warn.push(`Jours additionnés sur ${act.length} toitures : si certaines sont traitées le même jour, réduisez leurs jours d'intervention.`);
       const asbAct=act.filter(r=>r.asb);
       const dechN=asbAct.length?Math.max(...asbAct.map(mult)):0;
       const depl=nDepl*(P.depl[cfg.zone]||0), nac=nNac*P.nacelle, dech=dechN*P.dech;
@@ -452,8 +489,7 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
         <div class="step"><div class="lab">Toiture</div><div class="chips" data-k="fam"></div></div>
         <div class="roof-grid">
           <div class="f c6"><label>Matériau</label><div class="in">${sel(TYPES.filter(x=>x.fam===t.fam).map(x=>[x.id,x.short]),r.type,'data-k="type"')}</div></div>
-          <div class="f c3"><label>Surface</label><div class="in">${sel(SURFACES.map(v=>[v,nf(v)+" m²"]).concat([["autre","Autre surface…"]]),custom?"autre":r.surf,'data-k="surfSel"')}</div></div>
-          <div class="f c3"><label>Site</label><div class="in">${sel(sites.map(n=>[n,esc(n)]).concat([["__new","+ Nouveau site"]]),siteOf(r),'data-k="site"')}</div></div>
+          <div class="f ${custom?"c3":"c6"}"><label>Surface</label><div class="in">${sel(SURFACES.map(v=>[v,nf(v)+" m²"]).concat([["autre","Autre surface…"]]),custom?"autre":r.surf,'data-k="surfSel"')}</div></div>
           ${custom?`<div class="f c3"><label>Surface exacte</label><div class="in"><input data-k="surf" type="number" min="0" step="10" inputmode="numeric" value="${r.surf}"><span class="u">m²</span></div></div>`:""}
         </div>
         ${t.fam==="pentu"?'<div class="step"><div class="lab">Pente</div><div class="chips" data-k="pente"></div></div>':""}
@@ -463,6 +499,7 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
           <div class="c4"><div class="lab">Environnement amiante</div><div class="chips" data-k="asb"></div></div>
           <div class="f c4"><label>${r.asb?"Jours d'intervention, sous SS4":"Jours d'intervention"}${r.ce&&S.passages>1?" (par passage)":""}</label><div class="in">${sel(SS4_J.map(v=>[v,fr(v)+(v>1?" jours":" jour")]).concat(SS4_J.includes(+r.days)?[]:[[r.days,fr(r.days)+" jours"]]),r.days,'data-k="days"')}</div></div>
         </div>
+        ${r.footprint?`<div class="alert info">${r.surfFromMap?"Surface relevée sur la vue aérienne":"Relevé sur la vue aérienne"} (${esc(r.mapSource||"carte")}) : emprise au sol ${r.footprint.toLocaleString("fr-FR")} m²${r.surfFromMap&&slopeFactor(r)>1?`, surface estimée avec la pente : ${r.surf.toLocaleString("fr-FR")} m²`:""}${r.surfFromMap?"":" — surface modifiée à la main"}. Vérifiez sur place.</div>`:""}
         <div data-k="notes"></div>
         <div class="roof-actions">
           <button class="btn ghost" type="button" data-a="dup">Dupliquer</button>
@@ -474,9 +511,8 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
       q("name").oninput=e=>{ r.name=e.target.value; save(); update(); };
       chipGroup(q("fam"),[["plat","Toit plat"],["pentu","Toit pentu"]],t.fam,f=>{ if(f!==t.fam){ r.type=TYPES.find(x=>x.fam===f).id; if(f==="plat") r.pente="p1"; save(); renderAll(); } });
       q("type").onchange=e=>set("type",e.target.value,true);
-      q("surfSel").onchange=e=>{ if(e.target.value==="autre"){ r.surf=Math.max(1,+r.surf+1); save(); renderAll(); const i=document.querySelector(`.roof[data-id="${r.id}"] [data-k="surf"]`); if(i){ i.focus(); i.select(); } } else set("surf",num(e.target.value),true); };
-      const si=q("surf"); if(si) si.oninput=e=>set("surf",num(e.target.value),false);
-      q("site").onchange=e=>{ let v=e.target.value; if(v==="__new"){ v=nextSiteName(); S.sites[v]={zone:"hors100",depl:null,nac:0}; } r.site=v; save(); renderAll(); };
+      q("surfSel").onchange=e=>{ r.surfFromMap=false; if(e.target.value==="autre"){ r.surf=Math.max(1,+r.surf+1); save(); renderAll(); const i=document.querySelector(`.roof[data-id="${r.id}"] [data-k="surf"]`); if(i){ i.focus(); i.select(); } } else set("surf",num(e.target.value),true); };
+      const si=q("surf"); if(si) si.oninput=e=>{ r.surfFromMap=false; set("surf",num(e.target.value),false); };
       const pe=q("pente"); if(pe) chipGroup(pe,PENTES,r.pente,k=>set("pente",k,true));
       /* prestations en boutons bascule */
       const pb=q("presta"); pb.innerHTML="";
@@ -502,20 +538,17 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
       if(!S.sites[n]) S.sites[n]={zone:"hors100",depl:null,nac:0};
       const cfg=S.sites[n];
       const w=document.createElement("div"); w.className="site"; w.dataset.site=n;
-      w.innerHTML=`<div class="f"><label>Nom du site</label><div class="in"><input data-k="sname" value="${esc(n)}"></div></div>
-        <div class="f"><label>Zone et distance</label><div class="in">${sel(Object.keys(DEPL_L).map(k=>[k,DEPL_L[k]]),cfg.zone,'data-k="zone"')}</div></div>
-        <div class="f"><label>Déplacements</label><div class="in">${sel([["auto","Selon les jours"]].concat(DEPL_N.map(v=>[v,v===0?"Aucun":v+(v>1?" jours":" jour")])),cfg.depl==null?"auto":cfg.depl,'data-k="depl"')}</div></div>
-        <div class="f"><label>Nacelle ATTILA</label><div class="in">${sel([[0,"Aucune"],["auto","Selon les jours"]].concat(NAC_J.filter(v=>v>0).map(v=>[v,fr(v)+(v>1?" jours":" jour")])),cfg.nac,'data-k="nac"')}</div></div>
+      const nacOn=cfg.nac==="auto"||+cfg.nac>0;
+      w.innerHTML=`<div class="f" data-k="zoneBox"><label>Zone et distance</label><div class="in">${sel(Object.keys(DEPL_L).map(k=>[k,DEPL_L[k]]),cfg.zone,'data-k="zone"')}</div></div>
+        <div><div class="lab">Déplacements</div><div class="ro-val" data-k="deplRO">–</div></div>
+        <div class="zone-note" data-k="zoneNote" hidden>Déplacement inclus dans le contrat d'entretien, quelle que soit la distance : la zone ne change pas le prix.</div>
+        <div><div class="lab">Nacelle ATTILA nécessaire ?</div><div class="chips" data-k="nacOn"></div></div>
+        ${nacOn?`<div class="f"><label>Durée de nacelle</label><div class="in">${sel([["auto","Toute l'intervention"]].concat(NAC_J.filter(v=>v>0).map(v=>[v,fr(v)+(v>1?" jours":" jour")])),cfg.nac,'data-k="nac"')}</div></div>`:""}
         <div class="site-info" data-k="info"></div>`;
       box.appendChild(w);
       w.querySelector('[data-k="zone"]').onchange=e=>{ S.sites[n].zone=e.target.value; save(); update(); };
-      w.querySelector('[data-k="depl"]').onchange=e=>{ S.sites[n].depl=e.target.value==="auto"?null:num(e.target.value); save(); update(); };
-      w.querySelector('[data-k="nac"]').onchange=e=>{ S.sites[n].nac=e.target.value==="auto"?"auto":num(e.target.value); save(); update(); };
-      w.querySelector('[data-k="sname"]').onchange=e=>{
-        const nn=e.target.value.trim(); if(!nn||nn===n) { e.target.value=n; return; }
-        if(names.includes(nn)){ e.target.value=n; return; }
-        S.roofs.forEach(r=>{ if(siteOf(r)===n) r.site=nn; }); S.sites[nn]=S.sites[n]; delete S.sites[n]; save(); renderAll();
-      };
+      chipGroup(w.querySelector('[data-k="nacOn"]'),[[false,"Non"],[true,"Oui"]],nacOn,k=>{ S.sites[n].nac=k?"auto":0; save(); renderSites(); update(); });
+      const ns=w.querySelector('[data-k="nac"]'); if(ns) ns.onchange=e=>{ S.sites[n].nac=e.target.value==="auto"?"auto":num(e.target.value); save(); update(); };
     });
   }
 
@@ -531,15 +564,17 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
     document.querySelectorAll("#sites .site").forEach(w=>{
       const x=o.sites[w.dataset.site]; if(!x) return;
       const js=v=>fr(v)+(v>1?" jours":" jour");
-      const od=w.querySelector('[data-k="depl"] option[value="auto"]'); if(od) od.textContent="Selon les jours ("+js(x.daysAll)+")";
-      const on=w.querySelector('[data-k="nac"] option[value="auto"]'); if(on) on.textContent="Selon les jours ("+js(x.daysAll)+")";
-      w.querySelector('[data-k="info"]').innerHTML=`<span class="m">${js(x.daysAll)} d'intervention sur ce site, ${js(x.deplDays)} de déplacement${x.inclus?` dont ${fr(x.inclus)} inclus dans le contrat d'entretien : ${fr(x.nDepl)} facturé${x.nDepl>1?"s":""}`:""}.</span>`+x.warn.map(t=>`<div class="alert">${t}</div>`).join("");
+      const zb=w.querySelector('[data-k="zoneBox"]'), zn=w.querySelector('[data-k="zoneNote"]');
+      if(zb){ zb.hidden=x.nDepl<=0; zn.hidden=!(x.nDepl<=0&&x.deplDays>0); }
+      const dr=w.querySelector('[data-k="deplRO"]'); if(dr) dr.textContent=fr(x.deplDays)+" déplacement"+(x.deplDays>1?"s":"")+" (1 par jour)";
+      const on=w.querySelector('[data-k="nac"] option[value="auto"]'); if(on) on.textContent="Toute l'intervention ("+js(x.daysAll)+")";
+      w.querySelector('[data-k="info"]').innerHTML=`<span class="m">${js(x.daysAll)} d'intervention sur le site, ${js(x.deplDays)} de déplacement${x.inclus?` dont ${fr(x.inclus)} inclus dans le contrat d'entretien : ${fr(x.nDepl)} facturé${x.nDepl>1?"s":""}`:""}.</span>`+x.warn.map(t=>`<div class="alert">${t}</div>`).join("");
     });
 
     const A=o.agency, rMax=Math.max(0,+P.remiseMax);
     let rm=Math.max(0,S.remise); const capped=rm>rMax; if(capped) rm=rMax; rm/=100;
     const C=A*(1-rm), D=A-C;
-    $("r-label").textContent="Prix du devis HT"+(S.client?" — "+S.client:"")+(S.passages>1?" (entretien × "+S.passages+" passages)":"");
+    $("r-label").textContent="Prix du devis HT"+([S.client,S.siteName].filter(Boolean).length?" — "+[S.client,S.siteName].filter(Boolean).join(" · "):"")+(S.passages>1?" (entretien × "+S.passages+" passages)":"");
     $("r-total").innerHTML=o.devis?'<span style="color:var(--red)">Sur devis</span>':eur(C);
     $("r-was").textContent=rm>0?`Prix BPU : ${eur(A)}, remise de ${fr(Math.round(rm*1000)/10)} % soit ${eur(D)}`:"Prix BPU, sans remise";
     $("sb-total").innerHTML=o.devis?'<span style="color:var(--red)">Sur devis</span>':eur(C);
@@ -548,28 +583,30 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
     $("g-ro").innerHTML=`Remise maximale autorisée : <b>${fr(P.remiseMax)} %</b>`;
 
 
-    const rows=o.lines.filter(l=>l.v>0||l.devis).map(l=>`<tr><td>${esc(l.l)} <span class="m">· ${esc(l.s)}</span><br><span class="m">${l.sub}</span></td><td>${l.devis?(l.v>0?eur(l.v)+" + ":"")+"sur devis":eur(l.v)}</td></tr>`).join("");
+    const rows=o.lines.filter(l=>l.v>0||l.devis).map(l=>`<tr><td>${esc(l.l)}<br><span class="m">${l.sub}</span></td><td>${l.devis?(l.v>0?eur(l.v)+" + ":"")+"sur devis":eur(l.v)}</td></tr>`).join("");
     $("r-lines").innerHTML=rows+(rows?`<tr class="t"><td>Total avant remise</td><td>${o.devis?eur(A)+" + sur devis":eur(A)}</td></tr>`:`<tr><td class="m">Rien à chiffrer pour l'instant.</td><td></td></tr>`);
 
     const w=[...o.warn];
     if(capped) w.push({red:true,t:`Remise limitée à ${fr(rMax)} %, le maximum autorisé.`});
-    Object.entries(o.sites).forEach(([n,x])=>x.warn.forEach(t=>w.push({t:n+" : "+t})));
+    Object.entries(o.sites).forEach(([n,x])=>x.warn.forEach(t=>w.push({t})));
     if(S.roofs.some(r=>r.asb)) w.push({t:"Toiture en environnement amiante : surcoût SS4 et déchets amiante inclus dans le devis."});
     $("r-warn").innerHTML=[...new Map(w.map(x=>[x.t,x])).values()].map(x=>`<li class="${x.red?"red":""}">${x.t}</li>`).join("");
     $("ovBanner").classList.toggle("on",overridden);
   }
 
-  function renderAll(){ renderOffer(); renderRoofs(); renderSites(); update(); }
+  function renderAll(){ S.roofs.forEach(syncSurf); renderOffer(); renderRoofs(); renderSites(); update(); renderMapTools(); drawRoofsOnMap(); }
   $("sb-go").onclick=()=>{ const a=document.querySelector("aside"); if(a&&a.scrollIntoView) a.scrollIntoView({behavior:"smooth",block:"start"}); };
 
   $("g-client").value=S.client;
   $("g-client").addEventListener("input",e=>{ S.client=e.target.value; save(); update(); });
+  $("g-site").value=S.siteName||"";
+  $("g-site").addEventListener("input",e=>{ S.siteName=e.target.value; save(); update(); });
   $("addRoof").onclick=()=>{ const last=S.roofs[S.roofs.length-1]; const nr=newRoof(S.roofs.length+1,last?siteOf(last):"Site 1"); if(last){ nr.type=last.type; nr.pente=last.pente; } S.roofs.push(nr); save(); renderAll(); const els=document.querySelectorAll(".roof"); const e=els[els.length-1]; if(e&&e.scrollIntoView) e.scrollIntoView({behavior:"smooth",block:"center"}); };
   let armed=false;
   $("reset").onclick=()=>{ const b=$("reset");
     if(!armed){ armed=true; b.textContent="Confirmer : effacer le chiffrage"; b.style.color="var(--red)"; setTimeout(()=>{ armed=false; b.textContent="Effacer le chiffrage"; b.style.color=""; },4000); return; }
     armed=false; b.textContent="Effacer le chiffrage"; b.style.color="";
-    S=clone(DEF); S.roofs=[newRoof(1)]; save(); $("g-client").value=""; renderAll(); };
+    S=clone(DEF); S.roofs=[newRoof(1)]; save(); $("g-client").value=""; $("g-site").value=""; renderAll(); };
 
   /* ---------- paramètres Grands Comptes (code d'accès) ---------- */
   function hash(s){ s=String(s).trim().toUpperCase(); let a=5381,b=52711; for(const c of s){ const x=c.charCodeAt(0); a=(a*33)^x; b=(b*31)^x; a|=0; b|=0; } return (a>>>0).toString(16)+(b>>>0).toString(16); }
@@ -662,6 +699,163 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radiu
     $("backFile").onclick=()=>{ P=clone(FILE_P); overridden=false; try{ localStorage.removeItem(OV_KEY); }catch(e){} renderParams(); renderAll(); };
   }
 
+  /* ---------- carte : adresse, vue aérienne IGN, sélection des toitures ---------- */
+  const IGN_ORTHO="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg";
+  const IGN_GEOCODE=q=>"https://data.geopf.fr/geocodage/search?q="+encodeURIComponent(q)+"&autocomplete=1&limit=6";
+  const IGN_BATI=pt=>"https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:batiment&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326&COUNT=5&CQL_FILTER="+encodeURIComponent("INTERSECTS(geometrie,POINT("+pt+"))");
+  const COLORS=["#E3A21A","#3E8A8A","#C8102E","#6B5BD2","#2E7D32","#D2691E","#0077B6","#AD1457"];
+  const MAP={map:null,layers:null,mode:"click",active:null,draft:[],draftLayer:null,rubber:null,hover:null,tilesOk:0,tilesKo:0};
+  const mapMsg=(t,red)=>{ const m=$("mapMsg"); if(m){ m.innerHTML=t||""; m.className="map-msg"+(red?" red":""); } };
+
+  /* surface d'un contour en m² (formule sphérique, coordonnées [lat,lng]) */
+  function ringArea(ll){
+    const R=6378137, rad=Math.PI/180; let a=0;
+    for(let i=0;i<ll.length;i++){ const p1=ll[i], p2=ll[(i+1)%ll.length];
+      a+=(p2[1]-p1[1])*rad*(2+Math.sin(p1[0]*rad)+Math.sin(p2[0]*rad)); }
+    return Math.abs(a*R*R/2);
+  }
+  /* la carte donne l'emprise au sol ; un toit pentu est plus grand que son emprise */
+  const SLOPE={p1:1/Math.cos(25*Math.PI/180),p2:1/Math.cos(40*Math.PI/180),p3:1/Math.cos(50*Math.PI/180)};
+  const slopeFactor=r=>TYPE[r.type].fam==="pentu"?(SLOPE[r.pente]||1):1;
+  function syncSurf(r){ if(r.footprint&&r.surfFromMap) r.surf=Math.max(1,Math.round(r.footprint*slopeFactor(r))); }
+
+  function addRoofFromGeom(ll,source){
+    const area=Math.round(ringArea(ll));
+    if(area<5){ mapMsg("Contour trop petit : recommencez.",true); return; }
+    let r=MAP.active?S.roofs.find(x=>x.id===MAP.active):null;
+    if(!r&&!S.roofs.some(x=>x.geom)&&S.roofs.length===1) r=S.roofs[0];          /* la toiture 1 vierge prend la première sélection */
+    if(!r){ const last=S.roofs[S.roofs.length-1]; r=newRoof(S.roofs.length+1,SITE); if(last){ r.type=last.type; r.pente=last.pente; } S.roofs.push(r); }
+    r.geom=ll.map(p=>[+p[0].toFixed(7),+p[1].toFixed(7)]); r.footprint=area; r.surfFromMap=true; r.mapSource=source; syncSurf(r);
+    MAP.active=null; save(); renderAll();
+    mapMsg(`<b>${esc(r.name)}</b> : emprise au sol ${area.toLocaleString("fr-FR")} m²${slopeFactor(r)>1?`, surface de toiture estimée ${r.surf.toLocaleString("fr-FR")} m² avec la pente`:""}. Cliquez un autre bâtiment pour ajouter une toiture.`);
+  }
+
+  async function pickBuilding(lat,lng){
+    mapMsg("Recherche du bâtiment…");
+    const toLatLng=c=>Math.abs(c[0])>30?[c[0],c[1]]:[c[1],c[0]];      /* France : latitude > 30, longitude < 30 */
+    const inside=(pt,ring)=>{ let c=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const a=ring[i],b=ring[j];
+      if(((a[0]>pt[0])!==(b[0]>pt[0]))&&(pt[1]<(b[1]-a[1])*(pt[0]-a[0])/(b[0]-a[0])+a[1])) c=!c; } return c; };
+    try{
+      let feats=[];
+      for(const pt of [lng+" "+lat, lat+" "+lng]){
+        const res=await fetch(IGN_BATI(pt)); if(!res.ok) throw new Error("http "+res.status);
+        const js=await res.json(); feats=(js.features||[]).filter(f=>f.geometry); if(feats.length) break;
+      }
+      if(!feats.length){ mapMsg("Aucun bâtiment référencé à cet endroit : passez en mode « Dessiner le contour ».",true); return; }
+      const rings=[];
+      feats.forEach(f=>{ const g=f.geometry; const polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:[]; polys.forEach(p=>p[0]&&rings.push(p[0].map(toLatLng))); });
+      const ring=rings.find(rg=>inside([lat,lng],rg))||rings[0];
+      if(!ring){ mapMsg("Forme du bâtiment illisible : dessinez le contour.",true); return; }
+      addRoofFromGeom(ring.slice(0,ring.length>3&&ring[0][0]===ring[ring.length-1][0]&&ring[0][1]===ring[ring.length-1][1]?-1:undefined),"bâtiment IGN");
+    }catch(e){ mapMsg("Service des bâtiments IGN injoignable : dessinez le contour, ou saisissez la surface dans la toiture.",true); }
+  }
+
+  function drawDraft(){
+    if(!MAP.map) return;
+    if(MAP.draftLayer){ MAP.layers.removeLayer(MAP.draftLayer); MAP.draftLayer=null; }
+    const g=L.layerGroup(), d=MAP.draft;
+    if(d.length>1) L.polyline(d,{color:"#ffffff",weight:3,opacity:.95,interactive:false}).addTo(g);
+    if(d.length>2) L.polygon(d,{stroke:false,fillColor:"#E3A21A",fillOpacity:.25,interactive:false}).addTo(g);
+    d.forEach((p,i)=>{
+      const first=i===0&&d.length>2;
+      const m=L.circleMarker(p,{radius:first?9:5,color:first?"#C8102E":"#1F2A30",weight:2,fillColor:"#ffffff",fillOpacity:1,bubblingMouseEvents:false}).addTo(g);
+      if(first){ m.bindTooltip("Cliquer ici pour fermer",{direction:"top",offset:[0,-8]}); m.on("click",()=>finishDraft()); }
+    });
+    MAP.draftLayer=g.addTo(MAP.layers); drawRubber();
+    $("drawBar").hidden=MAP.mode!=="draw";
+    $("drawDone").disabled=d.length<3; $("drawUndo").disabled=!d.length;
+    if(MAP.mode==="draw") mapMsg(!d.length?"Cliquez le premier angle du toit.":d.length<3?`Cliquez l'angle suivant (${d.length} point${d.length>1?"s":""} posé${d.length>1?"s":""}).`:`${d.length} points · ${Math.round(ringArea(d)).toLocaleString("fr-FR")} m² au sol. Cliquez le premier point (rouge) ou « Terminer le contour » pour fermer.`);
+  }
+  function drawRubber(){
+    if(MAP.rubber){ MAP.layers.removeLayer(MAP.rubber); MAP.rubber=null; }
+    const d=MAP.draft; if(MAP.mode!=="draw"||!d.length||!MAP.hover) return;
+    const pts=[d[d.length-1],MAP.hover].concat(d.length>1?[d[0]]:[]);
+    MAP.rubber=L.polyline(pts,{color:"#ffffff",weight:2,dashArray:"6 6",interactive:false}).addTo(MAP.layers);
+  }
+  function finishDraft(){ if(MAP.draft.length>=3){ const d=MAP.draft; MAP.draft=[]; MAP.hover=null; addRoofFromGeom(d,"contour dessiné"); drawDraft(); } }
+  function setMapCursor(){ if(MAP.map){ const c=MAP.map.getContainer(); c.classList.toggle("draw-mode",MAP.mode==="draw");
+    if(MAP.mode==="draw") MAP.map.doubleClickZoom.disable(); else MAP.map.doubleClickZoom.enable(); } }
+
+  function drawRoofsOnMap(){
+    if(!MAP.map) return;
+    MAP.layers.clearLayers(); MAP.draftLayer=null; drawDraft();
+    S.roofs.forEach((r,i)=>{ if(!r.geom) return;
+      const col=COLORS[i%COLORS.length];
+      L.polygon(r.geom,{color:col,weight:3,fillOpacity:MAP.active===r.id?0.45:0.25})
+        .bindTooltip(`${esc(r.name)} · ${r.surf.toLocaleString("fr-FR")} m²`,{permanent:true,direction:"center",className:"roof-tip"})
+        .on("click",ev=>{ L.DomEvent.stopPropagation(ev); if(MAP.mode==="draw"){ MAP.draft.push([ev.latlng.lat,ev.latlng.lng]); drawDraft(); return; } const el=document.querySelector(`.roof[data-id="${r.id}"]`); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:"smooth",block:"center"}); })
+        .addTo(MAP.layers);
+    });
+  }
+
+  function renderMapTools(){
+    const box=$("mapRoofs"); if(!box) return; box.innerHTML="";
+    S.roofs.forEach((r,i)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="chip roofchip";
+      b.innerHTML=`<i style="background:${COLORS[i%COLORS.length]}"></i>${esc(r.name)}${r.geom?" ✓":""}`;
+      b.setAttribute("aria-pressed",String(MAP.active===r.id));
+      b.title=r.geom?"Resélectionner ce toit sur la carte":"Sélectionner ce toit sur la carte";
+      b.onclick=()=>{ MAP.active=MAP.active===r.id?null:r.id; renderMapTools(); drawRoofsOnMap();
+        if(MAP.active&&r.geom&&MAP.map) MAP.map.fitBounds(L.polygon(r.geom).getBounds(),{maxZoom:20,padding:[30,30]});
+        mapMsg(MAP.active?`Cliquez sur le bâtiment de <b>${esc(r.name)}</b>${MAP.mode==="draw"?" ou dessinez son contour":""}.`:"Cliquez sur un bâtiment : une nouvelle toiture est ajoutée."); };
+      box.appendChild(b);
+    });
+    const n=document.createElement("button"); n.type="button"; n.className="chip"; n.textContent="+ Nouveau toit";
+    n.setAttribute("aria-pressed",String(MAP.active===null)); n.onclick=()=>{ MAP.active=null; renderMapTools(); mapMsg("Cliquez sur un bâtiment : une nouvelle toiture est ajoutée."); };
+    box.appendChild(n);
+    chipGroup($("mapMode"),[["click","➚ Cliquer un bâtiment"],["draw","✎ Dessiner le contour"]],MAP.mode,k=>{ MAP.mode=k; MAP.draft=[]; MAP.hover=null; setMapCursor(); renderMapTools(); drawDraft();
+      if(k==="click") mapMsg("Cliquez sur un bâtiment pour relever sa surface."); });
+  }
+
+  function initMap(){
+    if(MAP.map) return;
+    if(!window.L){ mapMsg("La carte n'a pas pu se charger (bibliothèque Leaflet indisponible). Les surfaces restent saisissables dans chaque toiture.",true); return; }
+    const c=S.siteLatLng||[46.6,2.4];
+    MAP.map=L.map("map",{zoomControl:true,attributionControl:true}).setView(c,S.siteLatLng?19:6);
+    const tiles=L.tileLayer(IGN_ORTHO,{maxNativeZoom:19,maxZoom:21,attribution:"© IGN – Géoplateforme"}).addTo(MAP.map);
+    tiles.on("tileload",()=>MAP.tilesOk++);
+    tiles.on("tileerror",()=>{ MAP.tilesKo++; if(!MAP.tilesOk&&MAP.tilesKo>3) mapMsg("Vue aérienne indisponible ici (réseau ou aperçu qui bloque les services IGN). Elle fonctionne sur la version hébergée de l'outil.",true); });
+    MAP.layers=L.layerGroup().addTo(MAP.map);
+    MAP.map.on("click",e=>{
+      if(MAP.mode==="draw"){ MAP.draft.push([e.latlng.lat,e.latlng.lng]); drawDraft(); }
+      else pickBuilding(e.latlng.lat,e.latlng.lng);
+    });
+    MAP.map.on("mousemove",e=>{ if(MAP.mode==="draw"&&MAP.draft.length){ MAP.hover=[e.latlng.lat,e.latlng.lng]; drawRubber(); } });
+    MAP.map.on("mouseout",()=>{ MAP.hover=null; drawRubber(); });
+    MAP.map.on("dblclick",()=>{ if(MAP.mode==="draw"){ MAP.draft.pop(); finishDraft(); } });   /* le double-clic pose un point en trop */
+    $("drawDone").onclick=finishDraft;
+    $("drawUndo").onclick=()=>{ MAP.draft.pop(); drawDraft(); };
+    setMapCursor();
+    $("drawCancel").onclick=()=>{ MAP.draft=[]; drawDraft(); mapMsg("Contour annulé."); };
+    mapMsg(S.siteLatLng?"Cliquez sur un bâtiment pour relever sa surface.":"Saisissez l'adresse du site pour centrer la vue aérienne.");
+    drawRoofsOnMap();
+  }
+
+  /* adresse avec autocomplétion (Base Adresse Nationale via la Géoplateforme IGN) */
+  (function(){
+    const inp=$("g-site"), list=$("ac"); let timer=null, items=[], idx=-1, seq=0;
+    const close=()=>{ list.hidden=true; list.innerHTML=""; idx=-1; };
+    const choose=f=>{ const [lon,lat]=f.geometry.coordinates; S.siteName=f.properties.label; S.siteLatLng=[lat,lon]; inp.value=S.siteName; close(); save(); update();
+      initMap(); if(MAP.map){ MAP.map.setView([lat,lon],19); mapMsg("Cliquez sur un bâtiment pour relever sa surface."); } };
+    inp.addEventListener("input",()=>{ clearTimeout(timer); const q=inp.value.trim();
+      if(q.length<4){ close(); return; }
+      timer=setTimeout(async()=>{ const my=++seq;
+        try{ const res=await fetch(IGN_GEOCODE(q)); const js=await res.json(); if(my!==seq) return;
+          items=(js.features||[]).filter(f=>f.geometry&&f.properties);
+          list.innerHTML=items.map((f,i)=>`<button type="button" class="ac-item" data-i="${i}">${esc(f.properties.label)}</button>`).join("");
+          list.hidden=!items.length; idx=-1;
+          list.querySelectorAll(".ac-item").forEach(b=>b.onclick=()=>choose(items[+b.dataset.i]));
+        }catch(e){ close(); }
+      },250); });
+    inp.addEventListener("keydown",e=>{ const b=[...list.querySelectorAll(".ac-item")]; if(list.hidden||!b.length) return;
+      if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); idx=(idx+(e.key==="ArrowDown"?1:-1)+b.length)%b.length; b.forEach((x,i)=>x.classList.toggle("on",i===idx)); }
+      else if(e.key==="Enter"&&idx>=0){ e.preventDefault(); choose(items[idx]); } else if(e.key==="Escape") close(); });
+    document.addEventListener("click",e=>{ if(!list.contains(e.target)&&e.target!==inp) close(); });
+  })();
+
+  window.__chiffrage={addRoofFromGeom,ringArea,pickBuilding,map:()=>MAP.map,state:()=>S};
+
+  initMap();
   renderParams(); renderAll();
 })();
 
