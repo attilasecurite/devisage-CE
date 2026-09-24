@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chiffrage toitures — BPU Grands Comptes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1F2A30; --muted:#5B6870; --line:#D5DBDE; --paper:#F5F7F7; --card:#FFFFFF; --field:#FFFFFF;
+  --red:#C8102E; --amber:#E3A21A; --ok:#1E7D4F; --soft:#EEF1F2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E8EDEF; --muted:#A3B0B6; --line:#34424A; --paper:#141C20; --card:#1C262B; --field:#243037;
+    --red:#F0485F; --amber:#F0B535; --ok:#4CC38A; --soft:#222E34;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E8EDEF; --muted:#A3B0B6; --line:#34424A; --paper:#141C20; --card:#1C262B; --field:#243037;
+  --red:#F0485F; --amber:#F0B535; --ok:#4CC38A; --soft:#222E34;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:24px 16px 48px}
+header{border-left:6px solid var(--red);padding:2px 0 2px 16px;margin-bottom:20px}
+h1{font:700 clamp(28px,4.2vw,40px)/1.05 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:0 0 6px}
+h2{font:700 21px/1.2 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:0 0 10px}
+header p{margin:0;color:var(--muted);max-width:72ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:20px;align-items:start}
+@media (max-width:960px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 10px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 14px}
+.f label,.lab{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+.in{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:8px;background:var(--field);overflow:hidden}
+.in:focus-within{border-color:var(--red)}
+.in input,.in select{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:600 16px "Barlow",Arial,sans-serif;padding:9px 10px;outline:none}
+.in select{appearance:auto}
+.in .u{padding:0 10px;color:var(--muted);font-size:13px;white-space:nowrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:600 14px "Barlow",Arial,sans-serif;padding:7px 12px;border-radius:18px;border:1.5px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer;min-height:38px}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.chip.am[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:#1F2A30}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.btn{font:600 14px "Barlow",Arial,sans-serif;border:1.5px solid var(--line);background:var(--field);color:var(--ink);border-radius:8px;padding:8px 13px;cursor:pointer;min-height:40px}
+.btn.main{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+
+/* toitures */
+.roof{border:1px solid var(--line);border-left:5px solid var(--ink);border-radius:10px;background:var(--card);padding:14px 14px 12px;margin-bottom:12px}
+.roof.asb{border-left-color:var(--amber)}
+.roof-h{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+.roof-h b{font:700 20px "Barlow Condensed","Arial Narrow",Arial,sans-serif}
+.roof-h .price{font:700 18px "Barlow Condensed","Arial Narrow",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.roof-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px 12px}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media (max-width:640px){.c3,.c4,.c5,.c6,.c8{grid-column:span 12}}
+.checks{display:flex;gap:8px 16px;flex-wrap:wrap}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;min-height:36px}
+.chk input{width:20px;height:20px;accent-color:var(--red)}
+.chk.off{color:var(--muted)}
+.chk small{color:var(--muted)}
+.alert{font-size:13px;border-radius:8px;padding:8px 10px;margin-top:10px;background:color-mix(in srgb,var(--amber) 15%,transparent)}
+.alert.red{background:color-mix(in srgb,var(--red) 12%,transparent)}
+.roof-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+details summary{cursor:pointer;font-weight:700;font-size:15px}
+details[open] summary{margin-bottom:10px}
+.site{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end;padding:10px 0;border-top:1px solid var(--line)}
+.site:first-of-type{border-top:0}
+.site b{font-size:15px}
+@media (max-width:640px){.site{grid-template-columns:1fr 1fr}.site b{grid-column:span 2}}
+
+/* résultat */
+aside{position:sticky;top:calc(12px + env(safe-area-inset-top,0px));max-height:calc(100vh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;border-radius:10px}
+@media (max-width:960px){aside{position:static}}
+.res{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+.big-l{font-size:13px;font-weight:600;color:var(--muted)}
+.big{font:700 clamp(40px,7vw,54px)/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:4px 0 4px;font-variant-numeric:tabular-nums}
+.big small{font-size:.4em;color:var(--muted);font-weight:600}
+.was{font-size:14px;color:var(--muted)}
+.split{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:14px 0 6px;background:var(--soft)}
+.split i{display:block;height:100%}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;margin:8px 0}
+.kv b{font-variant-numeric:tabular-nums;text-align:right}
+.kv .dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.sep{border:0;border-top:1px solid var(--line);margin:14px 0}
+.lines{font-size:13px;width:100%;border-collapse:collapse}
+.lines td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.lines td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:10px}
+.lines tr.t td{font-weight:700;border-bottom:0}
+.lines .m{color:var(--muted)}
+.target{background:var(--soft);border-radius:8px;padding:12px;margin-top:12px}
+.warnlist{margin:12px 0 0;padding:0;list-style:none;font-size:13px}
+.warnlist li{padding:7px 10px;border-radius:8px;margin-bottom:6px;background:color-mix(in srgb,var(--amber) 15%,transparent)}
+.warnlist li.red{background:color-mix(in srgb,var(--red) 12%,transparent)}
+.note{font-size:13px;color:var(--muted);margin-top:24px;max-width:82ch}
+.note h2{color:var(--ink)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:10px;margin-bottom:12px}
+
+.ro{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted)}
+.ro b{color:var(--ink)}
+.banner{border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px;background:color-mix(in srgb,var(--red) 12%,transparent);display:none}
+.banner.on{display:block}
+.gcbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.lock{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lock .in{max-width:220px}
+.err{color:var(--red);font-size:13px;font-weight:600}
+#params h3{font:700 17px "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:18px 0 8px}
+.ptable{width:100%;border-collapse:collapse;font-size:14px}
+.ptable th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:4px 6px}
+.ptable td{padding:4px 6px;border-top:1px solid var(--line)}
+.ptable input{width:100%;border:1.5px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);font:600 15px "Barlow",Arial,sans-serif;padding:6px 8px}
+.pwrap{overflow-x:auto}
+.pactions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+textarea{width:100%;min-height:140px;border:1.5px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);font:13px/1.4 ui-monospace,Consolas,monospace;padding:8px}
+
+.stickybar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:2px solid var(--red);box-shadow:0 -4px 16px rgba(0,0,0,.12);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.stickybar .sb{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto}
+.stickybar .sb-main{flex:1;min-width:0}
+.stickybar .sb-l{font-size:12px;color:var(--muted);font-weight:600}
+.stickybar .sb-v{font:700 28px/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.stickybar .sb-s{font-size:13px;color:var(--muted);text-align:right;line-height:1.35}
+.stickybar .sb-s b{color:var(--ink);font-variant-numeric:tabular-nums}
+@media (max-width:960px){.stickybar{display:block}body{padding-bottom:84px}}
+.roof-h .price small{font:600 13px "Barlow",Arial,sans-serif;color:var(--muted);margin-left:6px}
+
+.tname{flex:1;min-width:0;font:700 21px "Barlow Condensed","Arial Narrow",Arial,sans-serif;color:var(--ink);background:transparent;border:0;border-bottom:1.5px dashed transparent;padding:2px 0;outline:none}
+.tname:hover{border-bottom-color:var(--line)} .tname:focus{border-bottom-color:var(--red)}
+.step{margin-top:12px}
+.roof .roof-grid{margin-top:12px}
+.chip small{font-weight:500;opacity:.75;margin-left:4px}
+.chip:disabled{opacity:.45;cursor:not-allowed}
+@media (min-width:641px){.site{grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}}
+.site-info{grid-column:1 / -1;font-size:13px}
+.site-info .m{color:var(--muted)}
+.site-info .alert{margin-top:6px}
+.alert.info{background:var(--soft);color:var(--muted)}
+</style>
+<!-- PARAMÈTRES OFFICIELS : bloc modifié par l'export « Paramètres Grands Comptes ». Ne pas renommer l'id. -->
+<script type="application/json" id="bpu-params">
+{
+  "version": "BPU Standardisé 2026",
+  "remiseMax": 15,
+  "over": "corr",
+  "cumul": true,
+  "p2": 10,
+  "p3": 25,
+  "ss4": 900,
+  "dech": 220,
+  "dallesMaj": 20,
+  "eep": 7,
+  "nacelle": 192,
+  "depl": {"hors100": 150, "hors200": 180, "agglo100": 180, "agglo200": 210},
+  "ce": {
+    "plat":  {"p": [500, 600, 704, 840, 1008, 1176, 1488, 1896, 2236], "r": [0.168, 0.144, 0.12]},
+    "pentu": {"p": [586, 665, 775, 924, 1109, 1294, 1637, 2086, 2460], "r": [0.176, 0.144]}
+  },
+  "types": {
+    "plat_app":    {"dem": 2.8, "demMin": 500, "prev": 3.8, "prevMin": 500},
+    "plat_lest":   {"dem": 4.8, "demMin": 500, "prev": null, "prevMin": 0},
+    "plat_dalles": {"dem": 4.8, "demMin": 500, "prev": null, "prevMin": 0},
+    "pent_petits": {"dem": 4.8, "demMin": 500, "prev": 4.8, "prevMin": 500},
+    "pent_metal":  {"dem": null, "demMin": 0, "prev": null, "prevMin": 0},
+    "pent_frag":   {"dem": 5.5, "demMin": 650, "prev": null, "prevMin": 0}
+  }
+}
+</script>
+</head>
+<body>
+<div class="stickybar" id="sbar" role="region" aria-label="Prix en cours">
+  <div class="sb">
+    <div class="sb-main"><div class="sb-l">Prix du devis HT</div><div class="sb-v" id="sb-total">–</div></div>
+    <div class="sb-s" id="sb-s"></div>
+    <button class="btn" type="button" id="sb-go">Détail</button>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <h1>Chiffrage toitures — BPU Grands Comptes</h1>
+    <p>Saisissez chaque toiture du client : type, surface, pente, amiante et prestations. L'outil applique les prix du BPU, les majorations et la remise éventuelle, et calcule le prix de votre devis.</p>
+  </header>
+  <div class="banner" id="ovBanner">Paramètres modifiés sur ce navigateur uniquement, pas encore publiés. Les agences voient toujours les paramètres du fichier.</div>
+
+  <div class="grid">
+    <main>
+      <section class="panel">
+        <h2>Offre</h2>
+        <div class="fields">
+          <div class="f"><label for="g-client">Client</label><div class="in"><input id="g-client" type="text" placeholder="Nom du client"></div></div>
+          <div class="f"><label for="g-remise">Remise accordée au client</label><div class="in" id="g-remise-box"></div></div>
+          <div class="f"><label for="g-passages">Contrat d'entretien</label><div class="in" id="g-passages-box"></div></div>
+        </div>
+        <div class="ro" id="g-ro"></div>
+      </section>
+
+      <section>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Toitures</h2>
+          <button class="btn main" id="addRoof" type="button">Ajouter une toiture</button>
+        </div>
+        <div id="roofs"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Déplacements et nacelle, par site</h2>
+        <p class="hint">Le contrat d'entretien inclut le déplacement. Pour le démoussage, le traitement préventif et le nettoyage des évacuations, le BPU ajoute un forfait déplacement par jour d'intervention.</p>
+        <div id="sites"></div>
+      </section>
+
+      <section class="panel" id="gcPanel">
+        <div class="gcbar">
+          <h2 style="margin:0">Paramètres Grands Comptes</h2>
+          <div class="lock" id="lockBox">
+            <div class="in"><input id="code" type="password" autocomplete="off" placeholder="Code d'accès" aria-label="Code d'accès"></div>
+            <button class="btn" id="unlock" type="button">Déverrouiller</button>
+            <span class="err" id="codeErr"></span>
+          </div>
+          <button class="btn ghost" id="relock" type="button" style="display:none">Verrouiller</button>
+        </div>
+        <p class="hint" style="margin-top:8px" id="gcHint">Réservé à la cellule Grands Comptes : prix du BPU, remise maximale et règles de calcul.</p>
+        <div id="params" hidden></div>
+      </section>
+    </main>
+
+    <aside>
+      <div class="res" aria-live="polite">
+        <div class="big-l" id="r-label">Prix du devis HT</div>
+        <div class="big" id="r-total">–</div>
+        <div class="was" id="r-was"></div>
+        <div class="target">
+          <div class="f"><label for="t-prix">Prix visé pour le devis (HT)</label><div class="in"><input id="t-prix" type="number" min="0" step="10" inputmode="decimal" placeholder="ex. 12 000"><span class="u">€</span></div></div>
+          <div id="t-out" style="font-size:14px;margin-top:8px"></div>
+        </div>
+        <hr class="sep">
+        <div class="lab">Détail, avant remise</div>
+        <table class="lines" id="r-lines"></table>
+        <ul class="warnlist" id="r-warn"></ul>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn ghost" id="reset" type="button">Effacer le chiffrage</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="note">
+    <h2>D'où viennent les prix</h2>
+    <p>Les prix sont ceux du BPU Standardisé 2026 applicables par l'agence. La remise s'applique sur le total du devis, dans la limite de la remise maximale autorisée.</p>
+    <p>Hors BPU, à valider : majorations de pente, surcoût SS4 par jour, forfait déchets amiante. Les prestations absentes du BPU pour un type de toiture sont signalées « sur devis » et ne sont pas chiffrées. Vos saisies restent sur cet appareil.</p>
+  </section>
+</div>
+<script>
+(function(){
+  /* ---------- paramètres : fichier, puis surcharge locale éventuelle (cellule GC) ---------- */
+  const FILE_P = JSON.parse(document.getElementById("bpu-params").textContent);
+  const OV_KEY = "chiffrage-bpu-params-local";
+  const ST_KEY = "chiffrage-toitures-bpu-v2";
+  const CODE_HASH = "51c15ee6fb5feb52";
+  const clone = o => JSON.parse(JSON.stringify(o));
+  let P = clone(FILE_P), overridden = false;
+  try{ const ov = localStorage.getItem(OV_KEY); if(ov){ P = Object.assign(clone(FILE_P), JSON.parse(ov)); overridden = true; } }catch(e){}
+
+  const BOUNDS = [500,1000,2000,3000,4000,5000,6000,7000,8000];
+  const CE_OVER = { plat:[10000,30000,Infinity], pentu:[10000,15000] };
+  const CE_MAX = { plat:Infinity, pentu:15000 };
+  const TYPES = [
+    {id:"plat_app", short:"Membrane apparente (bitume, PVC, TPO, EPDM)",   fam:"plat",  label:"Toit plat — membrane apparente (bitume, PVC, TPO, EPDM)"},
+    {id:"plat_lest", short:"Membrane lestée (gravillons, végétalisé)",  fam:"plat",  label:"Toit plat — membrane lestée (gravillons, végétalisé zone stérile)"},
+    {id:"plat_dalles", short:"Dalles sur plots",fam:"plat",  label:"Toit plat — dalles sur plots (majoration sur l'entretien)", dalles:true},
+    {id:"pent_petits", short:"Tuiles, ardoises",fam:"pentu", label:"Toit pentu — tuiles, ardoises (petits éléments)"},
+    {id:"pent_metal", short:"Bac acier, joint debout", fam:"pentu", label:"Toit pentu — bac acier, joint debout (grands éléments métalliques)"},
+    {id:"pent_frag", short:"Fibres-ciment, plaques translucides",  fam:"pentu", label:"Toit pentu — fibres-ciment, plaques translucides (matériaux fragiles)", fragile:true}
+  ];
+  const TYPE = Object.fromEntries(TYPES.map(t=>[t.id,t]));
+  const rate = (id,k) => { const t=P.types[id]||{}; return (t[k]===null||t[k]===undefined||t[k]==="")?null:+t[k]; };
+  const DEPL_L = {hors100:"Hors agglomération, 0 à 100 km",hors200:"Hors agglomération, 101 à 200 km",agglo100:"Agglomération, 0 à 100 km",agglo200:"Agglomération, 101 à 200 km"};
+  const PENTES = [["p1","≤ 30°"],["p2","30 à 45°"],["p3","> 45°"]];
+  
+  /* ---------- état du chiffrage (saisies franchisé) ---------- */
+  const uid = () => Math.random().toString(36).slice(2,9);
+  const newRoof = (i,site) => ({id:uid(),name:"Toiture "+i,site:site||"Site 1",type:"plat_app",surf:500,pente:"p1",asb:false,days:1,ce:true,dem:false,prev:false,eep:0});
+  const DEF = {client:"",remise:0,passages:1,roofs:[newRoof(1)],sites:{}};
+  let S = clone(DEF);
+  try{ const raw=localStorage.getItem(ST_KEY); if(raw){ S=Object.assign(S,JSON.parse(raw)); if(!Array.isArray(S.roofs)) S.roofs=[]; } }catch(e){}
+  S.roofs.forEach(r=>{ if(r.days==null) r.days=r.asb?(+r.asbDays||1):1; });
+  Object.values(S.sites||{}).forEach(c=>{ if(c.nac==null) c.nac=0; });
+  const save = () => { try{ localStorage.setItem(ST_KEY,JSON.stringify(S)); }catch(e){} };
+
+  const $ = id => document.getElementById(id);
+  const num = v => { const n=parseFloat(String(v).replace(",",".")); return isFinite(n)?n:0; };
+  const eur = (v,d=0) => isFinite(v)?v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d})+" €":"–";
+  const fr = v => String(v).replace(".",",");
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  const siteOf = r => (r.site||"").trim() || "Site 1";
+
+  /* ---------- contrat d'entretien (prix agence) ---------- */
+  function ceAgence(fam, s){
+    const g=P.ce[fam];
+    if(s<=0) return {v:0};
+    if(s>CE_MAX[fam]) return {v:NaN,devis:true};
+    for(let i=0;i<BOUNDS.length;i++) if(s<=BOUNDS[i]) return {v:+g.p[i]};
+    const lims=CE_OVER[fam];
+    if(P.over==="bpu"){ const i=lims.findIndex(l=>s<=l); return {v:s*g.r[i],cliff:true}; }
+    let v=+g.p[g.p.length-1], from=8000;
+    for(let i=0;i<lims.length;i++){ const upto=Math.min(s,lims[i]); if(upto>from){ v+=(upto-from)*g.r[i]; from=upto; } if(s<=lims[i]) break; }
+    return {v};
+  }
+
+  /* ---------- calcul ---------- */
+  function compute(){
+    const out={roofs:{},lines:[],warn:[],agency:0,sites:{},devis:false};
+    const R=S.roofs, pas=Math.max(1,+S.passages||1);
+    R.forEach(r=>out.roofs[r.id]={ce:0,dem:0,prev:0,eep:0,maj:0,asb:0,total:0,notes:[],devis:false});
+    const siteNames=[...new Set(R.map(siteOf))];
+    const isCur=r=>(r.dem&&rate(r.type,"dem")!=null)||(r.prev&&rate(r.type,"prev")!=null)||r.eep>0;
+    const hasPresta=r=>r.ce||isCur(r);
+    const mult=r=>r.ce?pas:1;                      /* point 5 : un passage d'entretien = une intervention */
+
+    /* contrat d'entretien */
+    const groups={};
+    R.filter(r=>r.ce&&r.surf>0).forEach(r=>{
+      const fam=TYPE[r.type].fam, k=P.cumul?(siteOf(r)+"|"+fam):r.id;
+      (groups[k]=groups[k]||{fam,roofs:[]}).roofs.push(r);
+    });
+    let ceRaw=0;
+    Object.values(groups).forEach(g=>{
+      const tot=g.roofs.reduce((s,r)=>s+r.surf,0), res=ceAgence(g.fam,tot);
+      if(res.devis){                                /* point 2 : sur devis, jamais 0 € */
+        out.devis=true; out.warn.push({red:true,t:"Contrat d'entretien pentu au-delà de 15 000 m² : sur devis. Le total est bloqué tant que cette ligne n'est pas chiffrée."});
+        g.roofs.forEach(r=>{ out.roofs[r.id].devis=true; out.roofs[r.id].notes.push({red:true,t:"Entretien sur devis : plus de 15 000 m² de toit pentu"+(P.cumul&&g.roofs.length>1?" cumulés sur le site":"")+". Le total du devis est bloqué tant que cette ligne n'est pas chiffrée."}); });
+        return;
+      }
+      ceRaw+=res.v;
+      if(res.cliff) out.warn.push({red:true,t:(g.fam==="plat"?"Toit plat":"Toit pentu")+" de "+tot.toLocaleString("fr-FR")+" m² : la lecture actuelle du BPU applique le prix au m² sur toute la surface, ce qui donne moins cher qu'à 8 000 m²."});
+      g.roofs.forEach(r=>{
+        let part=res.v*r.surf/tot;
+        if(TYPE[r.type].dalles) part*=1+P.dallesMaj/100;
+        out.roofs[r.id].ce=part*pas;
+        if(g.roofs.length>1)                        /* point 4 : expliquer le prorata */
+          out.roofs[r.id].notes.push({info:true,t:`Entretien calculé sur ${tot.toLocaleString("fr-FR")} m² cumulés (${g.roofs.length} toitures ${g.fam==="plat"?"plates":"pentues"} du site) : cette toiture en porte ${Math.round(r.surf/tot*100)} %, au prorata de sa surface.`});
+      });
+    });
+
+    /* point 3 : écart si les sites étaient une même adresse */
+    if(P.cumul){
+      const ceSites=new Set(R.filter(r=>r.ce&&r.surf>0).map(siteOf));
+      if(ceSites.size>1){
+        let merged=0, ok=true;
+        ["plat","pentu"].forEach(f=>{ const s=R.filter(r=>r.ce&&r.surf>0&&TYPE[r.type].fam===f).reduce((a,r)=>a+r.surf,0); if(s>0){ const x=ceAgence(f,s); if(x.devis) ok=false; else merged+=x.v; } });
+        const gap=ceRaw-merged;
+        if(ok&&gap>0.5) out.warn.push({t:`Les surfaces d'entretien se cumulent par site. Vos ${ceSites.size} sites sont chiffrés séparément : s'il s'agit en réalité d'une même adresse, l'entretien coûterait ${eur(gap*pas)} de moins. Vérifiez la déclaration des sites.`});
+      }
+    }
+
+    /* démoussage et préventif : minimum par site et par prestation */
+    ["dem","prev"].forEach(k=>{
+      const bySite={};
+      R.filter(r=>r[k]&&r.surf>0&&rate(r.type,k)!=null).forEach(r=>{ (bySite[siteOf(r)]=bySite[siteOf(r)]||[]).push(r); });
+      Object.values(bySite).forEach(list=>{
+        const raw=list.map(r=>r.surf*rate(r.type,k)), sum=raw.reduce((a,b)=>a+b,0);
+        const min=Math.max(...list.map(r=>rate(r.type,k+"Min")||0)), amount=Math.max(sum,min);
+        list.forEach((r,i)=>{ out.roofs[r.id][k]=sum>0?amount*raw[i]/sum:0; if(amount>sum&&i===0) out.roofs[r.id].notes.push((k==="dem"?"Démoussage":"Traitement préventif")+" : forfait minimum du BPU appliqué."); });
+      });
+    });
+
+    R.forEach(r=>{
+      const o=out.roofs[r.id], t=TYPE[r.type];
+      o.eep=Math.max(0,r.eep)*P.eep;
+      const base=o.ce+o.dem+o.prev+o.eep;
+      const pct=t.fam==="pentu"?(r.pente==="p2"?P.p2:r.pente==="p3"?P.p3:0):0;
+      o.maj=base*pct/100;
+      /* point 1 : pas de SS4 sans prestation ; point 5 : SS4 à chaque passage */
+      o.asb=(r.asb&&hasPresta(r))?Math.max(0,+r.days||0)*mult(r)*P.ss4:0;
+      o.total=base+o.maj+o.asb;
+      if(t.fragile&&!r.asb) o.notes.push({red:true,t:"Plaques fibres-ciment : sans repérage amiante avant travaux fourni par le client, l'intervention se fait comme si l'amiante était présent. Cochez « amiante » ou exigez le repérage."});
+      if((r.dem&&rate(r.type,"dem")==null)||(r.prev&&rate(r.type,"prev")==null)) o.notes.push("Prestation absente du BPU pour ce type de toiture : sur devis, non chiffrée ici.");
+      if(!hasPresta(r)) o.notes.push(r.asb?{red:true,t:"Amiante coché mais aucune prestation choisie : rien n'est facturé pour cette toiture (ni SS4, ni déplacement, ni déchets)."}:"Aucune prestation choisie : rien n'est facturé pour cette toiture.");
+    });
+
+    siteNames.forEach(name=>{
+      const rs=R.filter(r=>siteOf(r)===name);
+      const act=rs.filter(hasPresta);
+      const cfg=Object.assign({zone:"hors100",depl:null,nac:0},S.sites[name]||{});
+      const d=r=>Math.max(0,+r.days||0);
+      const daysAll=act.reduce((a,r)=>a+d(r)*mult(r),0);
+      /* le contrat d'entretien inclut le déplacement du premier jour de chaque passage */
+      const billed=act.reduce((a,r)=>{
+        const first=(r.ce&&!isCur(r))?Math.max(0,d(r)-1):d(r);
+        return a+first+(mult(r)-1)*Math.max(0,d(r)-1);
+      },0);
+      const inclus=Math.max(0,daysAll-billed);          /* déplacements couverts par le contrat d'entretien */
+      const deplDays=cfg.depl==null?daysAll:+cfg.depl;   /* la case affiche les jours de déplacement, comme la nacelle */
+      const nDepl=Math.max(0,deplDays-inclus);            /* déplacements réellement facturés */
+      const nNac=cfg.nac==="auto"?daysAll:Math.max(0,+cfg.nac||0);
+      const warn=[];
+      if(cfg.depl!=null&&deplDays!==daysAll) warn.push(`${fr(daysAll)} jour${daysAll>1?"s":""} d'intervention mais ${fr(deplDays)} jour${deplDays>1?"s":""} de déplacement choisi${deplDays>1?"s":""}. Vérifiez.`);
+      if(cfg.nac!=="auto"&&nNac>0&&nNac!==daysAll) warn.push(`Nacelle sur ${fr(nNac)} jour${nNac>1?"s":""} pour ${fr(daysAll)} jour${daysAll>1?"s":""} d'intervention. Vérifiez.`);
+      if(act.filter(r=>d(r)>0).length>1&&(cfg.depl==null||cfg.nac==="auto")) warn.push(`Jours additionnés sur ${act.length} toitures. Si certaines sont traitées le même jour, choisissez le nombre exact.`);
+      const asbAct=act.filter(r=>r.asb);
+      const dechN=asbAct.length?Math.max(...asbAct.map(mult)):0;
+      const depl=nDepl*(P.depl[cfg.zone]||0), nac=nNac*P.nacelle, dech=dechN*P.dech;
+      out.sites[name]={depl,nac,dech,dechN,nDepl,deplDays,inclus,nNac,daysAll,billed,warn,total:depl+nac+dech};
+    });
+
+    if(pas>1&&R.some(r=>r.ce&&hasPresta(r))) out.warn.push({t:`Contrat d'entretien à ${pas} passages par an : jours d'intervention, déplacements, nacelle « selon les jours », SS4 et déchets amiante sont comptés à chaque passage.`});
+
+    R.forEach(r=>{ const o=out.roofs[r.id]; out.lines.push({l:r.name,s:siteOf(r),v:o.total,devis:o.devis,sub:[o.ce&&"entretien",o.dem&&"démoussage",o.prev&&"préventif",o.eep&&"évacuations",o.maj&&"pente",o.asb&&"SS4"].filter(Boolean).join(", ")}); out.agency+=o.total; });
+    Object.entries(out.sites).forEach(([n,x])=>{ if(x.total>0){ out.lines.push({l:"Déplacements, nacelle, déchets",s:n,v:x.total,sub:[x.depl&&(fr(x.nDepl)+" déplacement"+(x.nDepl>1?"s":"")+" facturé"+(x.nDepl>1?"s":"")+(x.inclus?" (+"+fr(x.inclus)+" inclus dans l'entretien)":"")),x.nac&&("nacelle "+fr(x.nNac)+" j"),x.dech&&("déchets amiante"+(x.dechN>1?" × "+x.dechN:""))].filter(Boolean).join(", ")}); out.agency+=x.total; }});
+    return out;
+  }
+
+  /* ---------- rendu franchisé ---------- */
+  function chipGroup(el,items,val,onPick,cls){
+    el.innerHTML="";
+    items.forEach(([k,l])=>{ const b=document.createElement("button"); b.type="button"; b.className="chip"+(cls?" "+cls:""); b.textContent=l; b.setAttribute("aria-pressed",String(val===k)); b.onclick=()=>onPick(k); el.appendChild(b); });
+  }
+  const unit = v => v==null?"<small>(sur devis)</small>":"<small>"+fr(v)+" €/m²</small>";
+
+  /* ---------- listes de choix (UX : le moins de saisie possible) ---------- */
+  const SURFACES=[50,100,150,200,300,400,500,750,1000,1250,1500,2000,2500,3000,4000,5000,6000,7000,8000,10000,12000,15000,20000,25000,30000];
+  const EEP_ML=[0,5,10,15,20,30,40,50,75,100,150,200,300];
+  const SS4_J=[0.5,1,1.5,2,3,4,5,6,8,10];
+  const NAC_J=[0,0.5,1,1.5,2,2.5,3,4,5,6,8,10];
+  const DEPL_N=[0,1,2,3,4,5,6,8,10];
+  const nf=v=>Number(v).toLocaleString("fr-FR");
+  function sel(opts,val,extra){ return `<select ${extra||""}>${opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(val)?" selected":""}>${l}</option>`).join("")}</select>`; }
+  const sitesList=()=>{ const l=[...new Set(S.roofs.map(siteOf))]; Object.keys(S.sites).forEach(k=>{ if(!l.includes(k)&&S.roofs.some(r=>siteOf(r)===k)) l.push(k); }); return l.length?l:["Site 1"]; };
+  function nextSiteName(){ let i=1; const all=new Set([...S.roofs.map(siteOf),...Object.keys(S.sites)]); while(all.has("Site "+i)) i++; return "Site "+i; }
+
+  function renderOffer(){
+    const rMax=Math.max(0,+P.remiseMax); const opts=[];
+    for(let i=0;i<=Math.floor(rMax);i++) opts.push(i);
+    if(!opts.includes(+S.remise)&&S.remise>0) opts.push(+S.remise);
+    opts.sort((a,b)=>a-b);
+    $("g-remise-box").innerHTML=sel(opts.map(v=>[v,v===0?"Sans remise":fr(v)+" %"+(v>rMax?" (au-delà du maximum)":"")]),S.remise,'id="g-remise"');
+    $("g-remise").onchange=e=>{ S.remise=num(e.target.value); save(); update(); };
+    $("g-passages-box").innerHTML=sel([1,2,3,4,6,12].map(v=>[v,v===1?"1 passage par an":v+" passages par an"]),S.passages,'id="g-passages"');
+    $("g-passages").onchange=e=>{ S.passages=num(e.target.value); save(); renderAll(); };
+  }
+
+  function renderRoofs(){
+    const box=$("roofs"); box.innerHTML="";
+    if(!S.roofs.length){ box.innerHTML='<div class="empty">Aucune toiture. Ajoutez la première toiture du client.</div>'; return; }
+    const sites=sitesList();
+    S.roofs.forEach((r,idx)=>{
+      const t=TYPE[r.type]||TYPES[0]; r.type=t.id;
+      const dem=rate(r.type,"dem"), prev=rate(r.type,"prev");
+      const custom=!SURFACES.includes(+r.surf);
+      const d=document.createElement("div"); d.className="roof"+(r.asb?" asb":""); d.dataset.id=r.id;
+      d.innerHTML=`
+        <div class="roof-h"><input class="tname" data-k="name" value="${esc(r.name)}" aria-label="Nom de la toiture"><span class="price" data-k="price"></span></div>
+        <div class="step"><div class="lab">Toiture</div><div class="chips" data-k="fam"></div></div>
+        <div class="roof-grid">
+          <div class="f c6"><label>Matériau</label><div class="in">${sel(TYPES.filter(x=>x.fam===t.fam).map(x=>[x.id,x.short]),r.type,'data-k="type"')}</div></div>
+          <div class="f c3"><label>Surface</label><div class="in">${sel(SURFACES.map(v=>[v,nf(v)+" m²"]).concat([["autre","Autre surface…"]]),custom?"autre":r.surf,'data-k="surfSel"')}</div></div>
+          <div class="f c3"><label>Site</label><div class="in">${sel(sites.map(n=>[n,esc(n)]).concat([["__new","+ Nouveau site"]]),siteOf(r),'data-k="site"')}</div></div>
+          ${custom?`<div class="f c3"><label>Surface exacte</label><div class="in"><input data-k="surf" type="number" min="0" step="10" inputmode="numeric" value="${r.surf}"><span class="u">m²</span></div></div>`:""}
+        </div>
+        ${t.fam==="pentu"?'<div class="step"><div class="lab">Pente</div><div class="chips" data-k="pente"></div></div>':""}
+        <div class="step"><div class="lab">Prestations</div><div class="chips" data-k="presta"></div></div>
+        <div class="roof-grid" style="margin-top:10px">
+          <div class="f c4"><label>Nettoyage des évacuations</label><div class="in">${sel(EEP_ML.map(v=>[v,v===0?"Aucun":v+" ml"]).concat(EEP_ML.includes(+r.eep)?[]:[[r.eep,r.eep+" ml"]]),r.eep,'data-k="eep"')}</div></div>
+          <div class="c4"><div class="lab">Environnement amiante</div><div class="chips" data-k="asb"></div></div>
+          <div class="f c4"><label>${r.asb?"Jours d'intervention, sous SS4":"Jours d'intervention"}${r.ce&&S.passages>1?" (par passage)":""}</label><div class="in">${sel(SS4_J.map(v=>[v,fr(v)+(v>1?" jours":" jour")]).concat(SS4_J.includes(+r.days)?[]:[[r.days,fr(r.days)+" jours"]]),r.days,'data-k="days"')}</div></div>
+        </div>
+        <div data-k="notes"></div>
+        <div class="roof-actions">
+          <button class="btn ghost" type="button" data-a="dup">Dupliquer</button>
+          <button class="btn ghost" type="button" data-a="del">Supprimer</button>
+        </div>`;
+      box.appendChild(d);
+      const set=(k,v,rerender)=>{ r[k]=v; save(); rerender?renderAll():update(); };
+      const q=k=>d.querySelector(`[data-k="${k}"]`);
+      q("name").oninput=e=>{ r.name=e.target.value; save(); update(); };
+      chipGroup(q("fam"),[["plat","Toit plat"],["pentu","Toit pentu"]],t.fam,f=>{ if(f!==t.fam){ r.type=TYPES.find(x=>x.fam===f).id; if(f==="plat") r.pente="p1"; save(); renderAll(); } });
+      q("type").onchange=e=>set("type",e.target.value,true);
+      q("surfSel").onchange=e=>{ if(e.target.value==="autre"){ r.surf=Math.max(1,+r.surf+1); save(); renderAll(); const i=document.querySelector(`.roof[data-id="${r.id}"] [data-k="surf"]`); if(i){ i.focus(); i.select(); } } else set("surf",num(e.target.value),true); };
+      const si=q("surf"); if(si) si.oninput=e=>set("surf",num(e.target.value),false);
+      q("site").onchange=e=>{ let v=e.target.value; if(v==="__new"){ v=nextSiteName(); S.sites[v]={zone:"hors100",depl:null,nac:0}; } r.site=v; save(); renderAll(); };
+      const pe=q("pente"); if(pe) chipGroup(pe,PENTES,r.pente,k=>set("pente",k,true));
+      /* prestations en boutons bascule */
+      const pb=q("presta"); pb.innerHTML="";
+      [["ce","Contrat d'entretien",true],["dem","Démoussage curatif",dem!=null,dem],["prev","Traitement préventif",prev!=null,prev]].forEach(([k,l,ok,px])=>{
+        const b=document.createElement("button"); b.type="button"; b.className="chip";
+        b.innerHTML=l+(k==="ce"?"":` <small>${ok?fr(px)+" €/m²":"sur devis"}</small>`);
+        b.setAttribute("aria-pressed",String(!!r[k]&&ok)); if(!ok){ b.disabled=true; b.title="Absent du BPU pour ce matériau : sur devis"; }
+        b.onclick=()=>set(k,!r[k],true); pb.appendChild(b);
+      });
+      q("eep").onchange=e=>set("eep",num(e.target.value),false);
+      chipGroup(q("asb"),[[false,"Non"],[true,"Oui"]],r.asb,k=>set("asb",k,true),"am");
+      q("days").onchange=e=>set("days",num(e.target.value),false);
+      d.querySelector('[data-a="dup"]').onclick=()=>{ S.roofs.splice(idx+1,0,Object.assign({},r,{id:uid(),name:r.name+" (copie)"})); save(); renderAll(); };
+      d.querySelector('[data-a="del"]').onclick=()=>{ S.roofs.splice(idx,1); save(); renderAll(); };
+    });
+  }
+
+  function renderSites(){
+    const box=$("sites"); box.innerHTML="";
+    const names=[...new Set(S.roofs.map(siteOf))];
+    if(!names.length){ box.innerHTML='<p class="hint">Ajoutez une toiture pour voir ses sites.</p>'; return; }
+    names.forEach(n=>{
+      if(!S.sites[n]) S.sites[n]={zone:"hors100",depl:null,nac:0};
+      const cfg=S.sites[n];
+      const w=document.createElement("div"); w.className="site"; w.dataset.site=n;
+      w.innerHTML=`<div class="f"><label>Nom du site</label><div class="in"><input data-k="sname" value="${esc(n)}"></div></div>
+        <div class="f"><label>Zone et distance</label><div class="in">${sel(Object.keys(DEPL_L).map(k=>[k,DEPL_L[k]]),cfg.zone,'data-k="zone"')}</div></div>
+        <div class="f"><label>Déplacements</label><div class="in">${sel([["auto","Selon les jours"]].concat(DEPL_N.map(v=>[v,v===0?"Aucun":v+(v>1?" jours":" jour")])),cfg.depl==null?"auto":cfg.depl,'data-k="depl"')}</div></div>
+        <div class="f"><label>Nacelle ATTILA</label><div class="in">${sel([[0,"Aucune"],["auto","Selon les jours"]].concat(NAC_J.filter(v=>v>0).map(v=>[v,fr(v)+(v>1?" jours":" jour")])),cfg.nac,'data-k="nac"')}</div></div>
+        <div class="site-info" data-k="info"></div>`;
+      box.appendChild(w);
+      w.querySelector('[data-k="zone"]').onchange=e=>{ S.sites[n].zone=e.target.value; save(); update(); };
+      w.querySelector('[data-k="depl"]').onchange=e=>{ S.sites[n].depl=e.target.value==="auto"?null:num(e.target.value); save(); update(); };
+      w.querySelector('[data-k="nac"]').onchange=e=>{ S.sites[n].nac=e.target.value==="auto"?"auto":num(e.target.value); save(); update(); };
+      w.querySelector('[data-k="sname"]').onchange=e=>{
+        const nn=e.target.value.trim(); if(!nn||nn===n) { e.target.value=n; return; }
+        if(names.includes(nn)){ e.target.value=n; return; }
+        S.roofs.forEach(r=>{ if(siteOf(r)===n) r.site=nn; }); S.sites[nn]=S.sites[n]; delete S.sites[n]; save(); renderAll();
+      };
+    });
+  }
+
+  function update(){
+    const o=compute();
+    const rmm=Math.min(Math.max(0,S.remise),Math.max(0,+P.remiseMax))/100;
+    S.roofs.forEach(r=>{
+      const d=document.querySelector(`.roof[data-id="${r.id}"]`); if(!d) return;
+      const x=o.roofs[r.id];
+      d.querySelector('[data-k="price"]').innerHTML=x.devis?'<span style="color:var(--red)">Sur devis</span>'+(x.total>0?'<small>+ '+eur(x.total*(1-rmm))+' chiffrés</small>':''):eur(x.total*(1-rmm))+(rmm>0?'<small>avant remise '+eur(x.total)+'</small>':'');
+      d.querySelector('[data-k="notes"]').innerHTML=x.notes.map(n=>typeof n==="string"?`<div class="alert">${n}</div>`:`<div class="alert ${n.red?"red":n.info?"info":""}">${n.t}</div>`).join("");
+    });
+    document.querySelectorAll("#sites .site").forEach(w=>{
+      const x=o.sites[w.dataset.site]; if(!x) return;
+      const js=v=>fr(v)+(v>1?" jours":" jour");
+      const od=w.querySelector('[data-k="depl"] option[value="auto"]'); if(od) od.textContent="Selon les jours ("+js(x.daysAll)+")";
+      const on=w.querySelector('[data-k="nac"] option[value="auto"]'); if(on) on.textContent="Selon les jours ("+js(x.daysAll)+")";
+      w.querySelector('[data-k="info"]').innerHTML=`<span class="m">${js(x.daysAll)} d'intervention sur ce site, ${js(x.deplDays)} de déplacement${x.inclus?` dont ${fr(x.inclus)} inclus dans le contrat d'entretien : ${fr(x.nDepl)} facturé${x.nDepl>1?"s":""}`:""}.</span>`+x.warn.map(t=>`<div class="alert">${t}</div>`).join("");
+    });
+
+    const A=o.agency, rMax=Math.max(0,+P.remiseMax);
+    let rm=Math.max(0,S.remise); const capped=rm>rMax; if(capped) rm=rMax; rm/=100;
+    const C=A*(1-rm), D=A-C;
+    $("r-label").textContent="Prix du devis HT"+(S.client?" — "+S.client:"")+(S.passages>1?" (entretien × "+S.passages+" passages)":"");
+    $("r-total").innerHTML=o.devis?'<span style="color:var(--red)">Sur devis</span>':eur(C);
+    $("r-was").textContent=rm>0?`Prix BPU : ${eur(A)}, remise de ${fr(Math.round(rm*1000)/10)} % soit ${eur(D)}`:"Prix BPU, sans remise";
+    $("sb-total").innerHTML=o.devis?'<span style="color:var(--red)">Sur devis</span>':eur(C);
+    if(o.devis) $("r-was").textContent=`Chiffrage partiel : ${eur(C)} hors lignes sur devis. Le prix du devis ne peut pas être envoyé en l'état.`;
+    $("sb-s").innerHTML=rm>0?`Remise <b>${fr(Math.round(rm*1000)/10)} %</b><br>soit <b>${eur(D)}</b>`:"Sans remise";
+    $("g-ro").innerHTML=`Remise maximale autorisée : <b>${fr(P.remiseMax)} %</b>`;
+
+    const T=num($("t-prix").value), tout=$("t-out");
+    if(o.devis) tout.innerHTML=T>0?'<div class="alert red">Prix visé indisponible : une ligne est sur devis.</div>':"";
+    else if(T>0&&A>0){
+      const need=(1-T/A)*100;
+      if(need<=0) tout.innerHTML=`Votre prix visé est <b>au-dessus du prix BPU</b> (${eur(A)}) : aucune remise nécessaire.`;
+      else{
+        const over=need>rMax;
+        tout.innerHTML=`Remise nécessaire : <b>${need.toLocaleString("fr-FR",{maximumFractionDigits:1})} %</b>, soit ${eur(A-T)} de moins que le prix BPU.`+
+          (over?`<div class="alert red">Au-delà de la remise maximale autorisée (${fr(rMax)} %) : validation Grands Comptes nécessaire.</div>`:` <div><button class="btn" type="button" id="applyT" style="margin-top:8px">Appliquer cette remise</button></div>`);
+        const b=$("applyT"); if(b) b.onclick=()=>{ S.remise=Math.round(need*10)/10; save(); renderOffer(); update(); };
+      }
+    } else if(!o.devis) tout.innerHTML="";
+
+    const rows=o.lines.filter(l=>l.v>0||l.devis).map(l=>`<tr><td>${esc(l.l)} <span class="m">· ${esc(l.s)}</span><br><span class="m">${l.sub}</span></td><td>${l.devis?(l.v>0?eur(l.v)+" + ":"")+"sur devis":eur(l.v)}</td></tr>`).join("");
+    $("r-lines").innerHTML=rows+(rows?`<tr class="t"><td>Total avant remise</td><td>${o.devis?eur(A)+" + sur devis":eur(A)}</td></tr>`:`<tr><td class="m">Rien à chiffrer pour l'instant.</td><td></td></tr>`);
+
+    const w=[...o.warn];
+    if(capped) w.push({red:true,t:`Remise limitée à ${fr(rMax)} %, le maximum autorisé.`});
+    Object.entries(o.sites).forEach(([n,x])=>x.warn.forEach(t=>w.push({t:n+" : "+t})));
+    if(S.roofs.some(r=>r.asb)) w.push({t:"Toiture en environnement amiante : surcoût SS4 et déchets amiante inclus dans le devis."});
+    $("r-warn").innerHTML=[...new Map(w.map(x=>[x.t,x])).values()].map(x=>`<li class="${x.red?"red":""}">${x.t}</li>`).join("");
+    $("ovBanner").classList.toggle("on",overridden);
+  }
+
+  function renderAll(){ renderOffer(); renderRoofs(); renderSites(); update(); }
+  $("sb-go").onclick=()=>{ const a=document.querySelector("aside"); if(a&&a.scrollIntoView) a.scrollIntoView({behavior:"smooth",block:"start"}); };
+
+  $("g-client").value=S.client;
+  $("g-client").addEventListener("input",e=>{ S.client=e.target.value; save(); update(); });
+  $("t-prix").addEventListener("input",update);
+  $("addRoof").onclick=()=>{ const last=S.roofs[S.roofs.length-1]; const nr=newRoof(S.roofs.length+1,last?siteOf(last):"Site 1"); if(last){ nr.type=last.type; nr.pente=last.pente; } S.roofs.push(nr); save(); renderAll(); const els=document.querySelectorAll(".roof"); const e=els[els.length-1]; if(e&&e.scrollIntoView) e.scrollIntoView({behavior:"smooth",block:"center"}); };
+  let armed=false;
+  $("reset").onclick=()=>{ const b=$("reset");
+    if(!armed){ armed=true; b.textContent="Confirmer : effacer le chiffrage"; b.style.color="var(--red)"; setTimeout(()=>{ armed=false; b.textContent="Effacer le chiffrage"; b.style.color=""; },4000); return; }
+    armed=false; b.textContent="Effacer le chiffrage"; b.style.color="";
+    S=clone(DEF); S.roofs=[newRoof(1)]; save(); $("g-client").value=""; renderAll(); };
+
+  /* ---------- paramètres Grands Comptes (code d'accès) ---------- */
+  function hash(s){ s=String(s).trim().toUpperCase(); let a=5381,b=52711; for(const c of s){ const x=c.charCodeAt(0); a=(a*33)^x; b=(b*31)^x; a|=0; b|=0; } return (a>>>0).toString(16)+(b>>>0).toString(16); }
+  let unlocked=false;
+  function tryUnlock(){
+    if(hash($("code").value)===CODE_HASH){ unlocked=true; $("code").value=""; $("codeErr").textContent=""; renderParams(); }
+    else $("codeErr").textContent="Code incorrect.";
+  }
+  $("unlock").onclick=tryUnlock;
+  $("code").addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
+  $("relock").onclick=()=>{ unlocked=false; renderParams(); };
+
+  function persistOverride(){ overridden=true; try{ localStorage.setItem(OV_KEY,JSON.stringify(P)); }catch(e){} renderAll(); }
+  const pin=(label,val,unitTxt,onSet,step)=>{
+    const w=document.createElement("div"); w.className="f";
+    w.innerHTML=`<label>${label}</label><div class="in"><input type="number" inputmode="decimal" step="${step||"any"}" value="${val==null?"":val}" placeholder="sur devis"><span class="u">${unitTxt}</span></div>`;
+    w.querySelector("input").oninput=e=>{ onSet(e.target.value===""?null:num(e.target.value)); persistOverride(); };
+    return w;
+  };
+
+  function renderParams(){
+    const box=$("params");
+    $("lockBox").style.display=unlocked?"none":"";
+    $("relock").style.display=unlocked?"":"none";
+    $("gcHint").textContent=unlocked?"Vos modifications s'appliquent tout de suite sur ce navigateur. Pour les diffuser aux agences, téléchargez le fichier mis à jour et remplacez-le sur le dépôt.":"Réservé à la cellule Grands Comptes : prix du BPU, remise maximale et règles de calcul.";
+    box.hidden=!unlocked; box.innerHTML=""; if(!unlocked) return;
+
+    const h=t=>{ const e=document.createElement("h3"); e.textContent=t; box.appendChild(e); };
+    const grid=()=>{ const g=document.createElement("div"); g.className="fields"; box.appendChild(g); return g; };
+    const chips=(label,items,val,onPick)=>{ const w=document.createElement("div"); w.style.marginTop="12px"; w.innerHTML=`<div class="lab">${label}</div><div class="chips"></div>`; box.appendChild(w); chipGroup(w.querySelector(".chips"),items,val,k=>{ onPick(k); persistOverride(); renderParams(); }); };
+
+    h("Politique commerciale");
+    let g=grid();
+    g.appendChild(pin("Remise maximale sans validation",P.remiseMax,"%",v=>P.remiseMax=v||0,0.5));
+
+    h("Règles de calcul");
+    chips("Contrat d'entretien au-delà de 8 000 m²",[["corr","Supplément au-delà de 8 000 m² (corrigé)"],["bpu","Prix au m² sur toute la surface (BPU actuel)"]],P.over,k=>P.over=k);
+    chips("Plusieurs toitures d'un même site",[[true,"Cumuler les surfaces pour l'entretien"],[false,"Chiffrer chaque toiture séparément"]],P.cumul,k=>P.cumul=k);
+    g=grid(); g.style.marginTop="12px";
+    g.appendChild(pin("Majoration dalles sur plots (entretien)",P.dallesMaj,"%",v=>P.dallesMaj=v||0,1));
+    g.appendChild(pin("Majoration pente 30 à 45°",P.p2,"%",v=>P.p2=v||0,1));
+    g.appendChild(pin("Majoration pente > 45°",P.p3,"%",v=>P.p3=v||0,1));
+    g.appendChild(pin("Surcoût SS4 par jour, part agence",P.ss4,"€",v=>P.ss4=v||0,10));
+    g.appendChild(pin("Déchets amiante, par site concerné",P.dech,"€",v=>P.dech=v||0,10));
+
+    h("Contrat d'entretien — prix agence par tranche");
+    const tw=document.createElement("div"); tw.className="pwrap"; box.appendChild(tw);
+    const lab=["1 à 500 m²","501 à 1 000 m²","1 001 à 2 000 m²","2 001 à 3 000 m²","3 001 à 4 000 m²","4 001 à 5 000 m²","5 001 à 6 000 m²","6 001 à 7 000 m²","7 001 à 8 000 m²"];
+    const extra=[["8 001 à 10 000 m² (€/m²)","8 001 à 10 000 m² (€/m²)"],["10 001 à 30 000 m² (€/m²)","10 001 à 15 000 m² (€/m²)"],["Au-delà de 30 000 m² (€/m²)","Au-delà de 15 000 m² : sur devis"]];
+    let rows=lab.map((l,i)=>`<tr><td>${l}</td><td><input data-f="plat" data-i="${i}" type="number" step="1" value="${P.ce.plat.p[i]}"></td><td><input data-f="pentu" data-i="${i}" type="number" step="1" value="${P.ce.pentu.p[i]}"></td></tr>`).join("");
+    rows+=extra.map((l,i)=>`<tr><td>${l[0]}${l[0]!==l[1]?` <span class="m">/ pentu : ${l[1]}</span>`:""}</td><td><input data-f="plat" data-r="${i}" type="number" step="0.001" value="${P.ce.plat.r[i]}"></td><td>${P.ce.pentu.r[i]!=null?`<input data-f="pentu" data-r="${i}" type="number" step="0.001" value="${P.ce.pentu.r[i]}">`:'<span class="m">sur devis</span>'}</td></tr>`).join("");
+    tw.innerHTML=`<table class="ptable"><thead><tr><th>Surface</th><th>Toit plat (€)</th><th>Toit pentu (€)</th></tr></thead><tbody>${rows}</tbody></table>`;
+    tw.querySelectorAll("input").forEach(inp=>inp.oninput=()=>{ const f=inp.dataset.f; if(inp.dataset.i!=null) P.ce[f].p[+inp.dataset.i]=num(inp.value); else P.ce[f].r[+inp.dataset.r]=num(inp.value); persistOverride(); });
+
+    h("Démoussage et traitement préventif — prix agence (champ vide = sur devis)");
+    const tw2=document.createElement("div"); tw2.className="pwrap"; box.appendChild(tw2);
+    tw2.innerHTML=`<table class="ptable"><thead><tr><th>Type de toiture</th><th>Démoussage €/m²</th><th>Minimum €</th><th>Préventif €/m²</th><th>Minimum €</th></tr></thead><tbody>${
+      TYPES.map(t=>{ const x=P.types[t.id]=P.types[t.id]||{}; return `<tr><td>${t.label}</td>${["dem","demMin","prev","prevMin"].map(k=>`<td><input data-t="${t.id}" data-k="${k}" type="number" step="0.1" value="${x[k]==null?"":x[k]}" placeholder="—"></td>`).join("")}</tr>`; }).join("")}</tbody></table>`;
+    tw2.querySelectorAll("input").forEach(inp=>inp.oninput=()=>{ P.types[inp.dataset.t][inp.dataset.k]=inp.value===""?null:num(inp.value); persistOverride(); });
+
+    h("Déplacements, nacelle, évacuations — prix agence");
+    g=grid();
+    Object.keys(DEPL_L).forEach(k=>g.appendChild(pin(DEPL_L[k],P.depl[k],"€",v=>P.depl[k]=v||0,1)));
+    g.appendChild(pin("Nacelle ATTILA, par jour",P.nacelle,"€",v=>P.nacelle=v||0,1));
+    g.appendChild(pin("Nettoyage des évacuations",P.eep,"€/ml",v=>P.eep=v||0,0.1));
+
+    h("Publier les paramètres");
+    const pub=document.createElement("div");
+    pub.innerHTML=`<p class="hint">Les agences voient uniquement les paramètres écrits dans le fichier. Téléchargez le fichier mis à jour puis remplacez l'ancien sur le dépôt Git : tout le réseau passe aux nouveaux chiffres.</p>
+      <div class="pactions">
+        <button class="btn main" type="button" id="dlHtml">Télécharger le fichier HTML mis à jour</button>
+        <button class="btn" type="button" id="showJson">Afficher les paramètres (JSON)</button>
+        <button class="btn ghost" type="button" id="backFile">Revenir aux paramètres du fichier</button>
+      </div>
+      <div id="pubOut" style="margin-top:10px"></div>`;
+    box.appendChild(pub);
+    $("showJson").onclick=()=>{ $("pubOut").innerHTML=`<p class="hint">À coller entre les balises &lt;script type="application/json" id="bpu-params"&gt; du fichier, à la place du contenu actuel.</p><textarea readonly>${esc(JSON.stringify(P,null,2))}</textarea>`; };
+    $("dlHtml").onclick=async()=>{
+      try{
+        const res=await fetch(location.href.split("#")[0],{cache:"no-store"}); if(!res.ok) throw 0;
+        const src=await res.text();
+        const re=/(<script type="application\/json" id="bpu-params">)[\s\S]*?(<\/script>)/;
+        if(!re.test(src)) throw 0;
+        const outHtml=src.replace(re,"$1\n"+JSON.stringify(P,null,2)+"\n$2");
+        const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([outHtml],{type:"text/html"}));
+        a.download=(location.pathname.split("/").pop()||"index.html"); document.body.appendChild(a); a.click(); a.remove();
+        $("pubOut").innerHTML='<p class="hint">Fichier téléchargé. Remplacez-le sur le dépôt pour publier les nouveaux paramètres.</p>';
+      }catch(e){ $("showJson").click(); $("pubOut").insertAdjacentHTML("afterbegin",'<p class="err">Téléchargement impossible depuis cette page (fichier ouvert en local, par exemple). Copiez les paramètres ci-dessous dans le fichier.</p>'); }
+    };
+    $("backFile").onclick=()=>{ P=clone(FILE_P); overridden=false; try{ localStorage.removeItem(OV_KEY); }catch(e){} renderParams(); renderAll(); };
+  }
+
+  renderParams(); renderAll();
+})();
+
+</script>
+</body>
+</html>
